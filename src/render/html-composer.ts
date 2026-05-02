@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Script, TemplateDataType } from "./script-schema.js";
 import type { TiktokConfig } from "../config.js";
@@ -33,6 +33,9 @@ export interface ComposeArgs {
   /** Relative path to avatar image inside the output dir (e.g. "tiktok-avatar.jpg"). */
   tiktokAvatarRelPath?: string;
   /** Extra seconds added to outro scene visual duration after voice ends (TikTok card hold). Default 3. */
+  videoPaths?: Record<string, string>;
+  /** Pexels still image paths keyed by scene id (from imageKeyword fetches). */
+  pexelsImagePaths?: Record<string, string>;
   outroHoldSec?: number;
 }
 
@@ -58,7 +61,11 @@ export function composeHtml(args: ComposeArgs): string {
 
   // Render scenes
   const sceneHtml = timing.map(({ scene, start, duration }) => {
-    return renderScene(scene, start, duration, bgImageRelPath, tiktok, tiktokAvatar);
+    const videoPath = args.videoPaths?.[scene.id];
+    const videoRelPath = videoPath ? `videos/${basename(videoPath)}` : null;
+    const pexelsImgPath = args.pexelsImagePaths?.[scene.id];
+    const pexelsImgRelPath = pexelsImgPath ? `images/pexels/${basename(pexelsImgPath)}` : null;
+    return renderScene(scene, start, duration, bgImageRelPath, videoRelPath, pexelsImgRelPath, tiktok, tiktokAvatar);
   }).join("\n");
 
   // Persistent shell — uses tiktok handle in footer
@@ -111,17 +118,63 @@ function renderScene(
   start: number,
   duration: number,
   bgImageRelPath: string | null,
+  videoRelPath: string | null,
+  pexelsImgRelPath: string | null,
   tiktok: TiktokConfig,
   tiktokAvatarRelPath: string,
 ): string {
   const td = scene.templateData;
+
+  // Generate background HTML: prioritize bgSrc (article image) for hook scene,
+  // Pexels video for body scenes, Pexels still image (imageKeyword) as alternative,
+  // and image fallback as last resort.
+  // Priority order for each scene type:
+  //   - hook + bgSrc  → article image (Ken Burns)
+  //   - body + video  → Pexels footage (magenta placeholder, composited later by ffmpeg)
+  //   - body + pexelsImg → Pexels still image (Ken Burns)
+  //   - any + bgSrc   → article image (Ken Burns) — explicit override
+  //   - any + bgImage → article image (Ken Burns)  — fallback
+  //   - default       → gradient
+  let bgHtml = "";
+  const isHook = scene.type === "hook";
+  const hasBgSrc = !!scene.visual?.bgSrc;
+
+  // HOOK always prefers bgSrc (article hero image) — never video
+  if (isHook && bgImageRelPath && hasBgSrc) {
+    const kb = scene.kenBurns || "zoom-in";
+    bgHtml = `<div class="bg kb-${kb}" style="background-image: url('${bgImageRelPath}')"></div>`;
+  }
+  // Use magenta placeholder for video (composited via ffmpeg in post-processing)
+  else if (videoRelPath) {
+    bgHtml = `<div class="bg footage-placeholder" data-video-scene="${scene.id}" style="background:#FF00FF;"></div>`;
+  }
+  // Pexels still image via imageKeyword
+  else if (pexelsImgRelPath) {
+    const kb = scene.kenBurns || "zoom-in";
+    bgHtml = `<div class="bg kb-${kb}" style="background-image: url('${pexelsImgRelPath}'); background-position: center 25%;"></div>`;
+  }
+  // Explicit bgSrc on non-hook scenes
+  else if (bgImageRelPath && hasBgSrc) {
+    const kb = scene.kenBurns || "zoom-in";
+    bgHtml = `<div class="bg kb-${kb}" style="background-image: url('${bgImageRelPath}')"></div>`;
+  }
+  // Generic fallback to article image
+  else if (bgImageRelPath) {
+    bgHtml = `<div class="bg kb-zoom-in" style="background-image: url('${bgImageRelPath}')"></div>`;
+  } else {
+    bgHtml = `<div class="bg gradient-news-dark"></div>`;
+  }
+  const overlayHtml = `<div class="overlay" style="opacity: 0.55"></div>
+  <div class="vignette"></div>
+  <div class="vignette-bottom"></div>
+  <div class="vignette-top"></div>`;
 
   let inner: string;
   let layoutName: string;
 
   switch (td.template) {
     case "hook":
-      inner = renderHookInner(td, bgImageRelPath);
+      inner = renderHookInner(td);
       layoutName = "hook";
       break;
     case "comparison":
@@ -150,27 +203,15 @@ function renderScene(
     }
   }
 
-  return buildScene(scene, start, duration, layoutName, inner);
+  return buildScene(scene, start, duration, layoutName, `${bgHtml}\n${overlayHtml}\n${inner}`);
 }
 
 // ── HOOK SCENE ─────────────────────────────────────────────────────────────
-function renderHookInner(td: Extract<TemplateDataType, { template: "hook" }>, bgImageRelPath: string | null): string {
-  // Background
-  let bgHtml: string;
-  if (td.bgSrc && bgImageRelPath) {
-    // Ken Burns image
-    const kbClass = td.kenBurns ?? "zoom-in";
-    bgHtml = `<div class="bg kb-${kbClass}" style="background-image: url('${bgImageRelPath}')"></div>`;
-  } else {
-    bgHtml = `<div class="bg gradient-news-dark"></div>`;
-  }
-  const overlayHtml = `<div class="overlay" style="opacity: 0.55"></div>`;
-
+function renderHookInner(td: Extract<TemplateDataType, { template: "hook" }>): string {
   const headline = escapeHtml(td.headline);
   const subhead = td.subhead ? escapeHtml(td.subhead) : "";
 
-  return `${bgHtml}
-  ${overlayHtml}
+  return `
   <div class="layout-hook">
     <div class="hook-headline shimmer-sweep-target">${headline}</div>
     ${subhead ? `<div class="hook-subhead">${subhead}</div>` : ""}

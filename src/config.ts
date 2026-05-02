@@ -29,6 +29,9 @@ export interface Config {
   // TikTok follow card (outro)
   tiktok: TiktokConfig;
 
+  // Stock Footage
+  pexelsApiKey?: string;
+
   ttsConcurrency: number;
 }
 
@@ -92,6 +95,7 @@ export function loadConfig(): Config {
       followers: process.env.TIKTOK_FOLLOWERS ?? "1.2M followers",
       avatarUrl: process.env.TIKTOK_AVATAR_URL || undefined,
     },
+    pexelsApiKey: process.env.PEXELS_API_KEY,
     ttsConcurrency: intDefault("TTS_CONCURRENCY", 1),
   };
 }

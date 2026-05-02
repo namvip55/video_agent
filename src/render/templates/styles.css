@@ -7,7 +7,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body {
-  width: 1080px; height: 1920px; overflow: hidden; background: #0a1628;
+  width: 1080px; height: 1920px; overflow: hidden; background: #FF00FF;
   font-family: 'Inter', 'Noto Sans', sans-serif;
 }
 
@@ -118,7 +118,9 @@ html, body {
 }
 
 /* ── BACKGROUND PRIMITIVES ─────────────────────────────────── */
-.bg { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 1; }
+.bg { position: absolute; inset: 0; background-size: cover; background-position: center 25%; z-index: 1; }
+.bg.footage-bg { object-fit: cover; }
+.bg.footage-placeholder { object-fit: cover; }
 
 /* Ken Burns */
 .bg.kb-zoom-in    { animation: kb-zoom-in    var(--scene-dur) linear forwards; }
@@ -137,6 +139,29 @@ html, body {
 
 /* Overlay (hook image darkening) */
 .overlay { position: absolute; inset: 0; background: #000; z-index: 2; }
+
+/* ── VIGNETTE — darkens corners/edges so text stays readable over any footage ── */
+.vignette {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background: radial-gradient(
+    ellipse 90% 80% at 50% 50%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.45) 75%,
+    rgba(0, 0, 0, 0.75) 100%
+  );
+}
+
+/* Extra bottom vignette — stronger gradient so bottom UI elements stay legible */
+.vignette-bottom {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 45%; z-index: 3; pointer-events: none;
+  background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%);
+}
+
+/* Extra top vignette — keeps brand header readable */
+.vignette-top {
+  position: absolute; top: 0; left: 0; right: 0; height: 35%; z-index: 3; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%);
+}
 
 /* ── SHIMMER SWEEP (from shimmer-sweep component) ───────────── */
 .shimmer-sweep-target {

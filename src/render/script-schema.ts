@@ -87,9 +87,21 @@ const Scene = z.object({
   id: z.string().min(1),
   type: z.enum(["hook", "body", "outro"]),
   voiceText: z.string().min(1),
+  visual: z.object({
+    videoKeyword: z.string().optional(),
+    /** Keyword to search Pexels Photos API for a still image background (alternative to videoKeyword) */
+    imageKeyword: z.string().optional(),
+    /** Override background for this scene: use article image (pass "$source.image" in pipeline) */
+    bgSrc: z.string().optional(),
+    background: z.object({
+      type: z.enum(["image", "video", "gradient"]).default("gradient"),
+      src: z.string().optional(),
+    }).optional(),
+  }).optional(),
   templateData: TemplateData,
-  /** Optional sound effect override (else pipeline picks per template) */
   sfx: SfxSpec.optional(),
+  /** Ken Burns effect for image backgrounds (defaults to "zoom-in") */
+  kenBurns: z.enum(["zoom-in", "zoom-out", "pan-left", "pan-right"]).optional(),
 });
 
 // ── Root schema ────────────────────────────────────────────────────────────
@@ -106,7 +118,7 @@ export const ScriptSchema = z.object({
     channel: z.string().min(1),
   }),
   voice: z.object({
-    provider: z.literal("lucylab"),
+    provider: z.enum(["lucylab", "elevenlabs"]),
     voiceId: z.string().min(1),
     speed: z.number().min(0.5).max(2.0),
   }),
