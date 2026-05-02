@@ -36,12 +36,20 @@ const FeatureListData = z.object({
   title: z.string().min(1).max(40),
   bullets: z.array(z.string().min(1).max(50)).min(1).max(4),
   icon: z.string().optional(),
+  align: z.enum(["center", "bottom-left", "bottom-right"]).default("center"),
 });
 
 const CalloutData = z.object({
   template: z.literal("callout"),
   statement: z.string().min(1).max(80),
   tag: z.string().max(20).optional(),
+  align: z.enum(["center", "bottom-left", "bottom-right"]).default("center"),
+});
+
+const KineticTextData = z.object({
+  template: z.literal("kinetic-text"),
+  chunks: z.array(z.string().min(1).max(30)).min(1).max(6),
+  highlightColor: z.enum(["primary", "secondary"]).default("primary"),
 });
 
 const OutroData = z.object({
@@ -57,6 +65,7 @@ export const TemplateData = z.discriminatedUnion("template", [
   StatHeroData,
   FeatureListData,
   CalloutData,
+  KineticTextData,
   OutroData,
 ]);
 
@@ -100,6 +109,8 @@ const Scene = z.object({
   }).optional(),
   templateData: TemplateData,
   sfx: SfxSpec.optional(),
+  /** Dynamic camera transition during the scene. None = static/normal KenBurns. punch-in = sudden scale up mid-scene */
+  camera: z.enum(["none", "punch-in", "punch-out", "shake"]).default("none").optional(),
   /** Ken Burns effect for image backgrounds (defaults to "zoom-in") */
   kenBurns: z.enum(["zoom-in", "zoom-out", "pan-left", "pan-right"]).optional(),
 });
@@ -116,6 +127,8 @@ export const ScriptSchema = z.object({
       image: z.string().url().nullable(),
     }),
     channel: z.string().min(1),
+    /** Color theme for the entire video. Default is "classic" (cyan/purple). */
+    theme: z.enum(["classic", "gold", "emerald", "sunset", "cyber"]).default("classic").optional(),
   }),
   voice: z.object({
     provider: z.enum(["lucylab", "elevenlabs"]),

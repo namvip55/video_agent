@@ -13,7 +13,9 @@
       "Bash(Remove-Item \"C:\\\\Users\\\\Admin\\\\expand_auto_create_video\\\\output\\\\phim-hot-2026-20260502-1530\\\\video-tmp.mp4\" -ErrorAction SilentlyContinue)",
       "Bash(Write-Output \"cleaned\")",
       "Bash(ffprobe -v quiet -print_format json -show_format -show_streams \"C:/Users/Admin/expand_auto_create_video/output/phim-hot-2026-20260502-1530/video.mp4\")",
-      "Bash(ffprobe \"C:/Users/Admin/expand_auto_create_video/output/phim-hot-2026-20260502-1530/video.mp4\")"
+      "Bash(ffprobe \"C:/Users/Admin/expand_auto_create_video/output/phim-hot-2026-20260502-1530/video.mp4\")",
+      "Bash(git checkout *)",
+      "Bash(PRODUCER_PUPPETEER_PROTOCOL_TIMEOUT_MS=600000 npm run *)"
     ]
   }
 }

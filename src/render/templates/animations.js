@@ -32,6 +32,19 @@ window.__timelines["news-video"] = tl;
     tl.set(scene, { opacity: 1 }, start);
     tl.set(scene, { opacity: 0 }, start + dur);
 
+    // ── Camera effects (Punch/Shake) ───────────────────────────────────────
+    const camera = scene.dataset.camera || "none";
+    const bg = scene.querySelector(".bg");
+    if (bg && camera !== "none") {
+      if (camera === "punch-in") {
+        tl.to(bg, { scale: 1.3, duration: 0.4, ease: "power2.out" }, start + dur * 0.4);
+      } else if (camera === "punch-out") {
+        tl.fromTo(bg, { scale: 1.3 }, { scale: 1.0, duration: 0.4, ease: "power2.out" }, start + dur * 0.4);
+      } else if (camera === "shake") {
+        tl.to(bg, { x: 5, y: 5, duration: 0.05, repeat: 10, yoyo: true }, start + dur * 0.3);
+      }
+    }
+
     if (layout === "hook") {
       animateHook(scene, tl, start);
     } else if (layout === "comparison") {
@@ -42,10 +55,36 @@ window.__timelines["news-video"] = tl;
       animateFeatureList(scene, tl, start);
     } else if (layout === "callout") {
       animateCallout(scene, tl, start);
+    } else if (layout === "kinetic-text") {
+      animateKineticText(scene, tl, start, dur);
     } else if (layout === "outro") {
       animateOutro(scene, tl, start, dur);
     }
   });
+
+  // ... [keep other functions as is] ...
+
+  // ── KINETIC TEXT ──────────────────────────────────────────────────────
+  function animateKineticText(scene, tl, start, dur) {
+    const chunks = scene.querySelectorAll(".kinetic-chunk");
+    const count = chunks.length;
+    const interval = (dur - 1.0) / count; // leave 1s at end
+
+    chunks.forEach((chunk, i) => {
+      const chunkStart = start + 0.2 + i * interval;
+
+      // Pop in
+      tl.fromTo(chunk,
+        { scale: 0.5, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(1.7)" },
+        chunkStart
+      );
+
+      // Highlight active state
+      tl.add(() => chunk.classList.add("active"), chunkStart);
+      tl.add(() => chunk.classList.remove("active"), chunkStart + interval);
+    });
+  }
 
   // ── HOOK ──────────────────────────────────────────────────────────────
   function animateHook(scene, tl, start) {
@@ -110,8 +149,17 @@ window.__timelines["news-video"] = tl;
   // ── FEATURE LIST ──────────────────────────────────────────────────────
   function animateFeatureList(scene, tl, start) {
     const card = scene.querySelector(".feat-card");
+    const isBottomLeft = scene.classList.contains("align-bottom-left");
+    const isBottomRight = scene.classList.contains("align-bottom-right");
+
     if (card) {
-      tl.fromTo(card, { y: 60, scale: 0.95, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.5 }, start + 0.1);
+      if (isBottomLeft) {
+        tl.fromTo(card, { x: -100, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6 }, start + 0.1);
+      } else if (isBottomRight) {
+        tl.fromTo(card, { x: 100, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6 }, start + 0.1);
+      } else {
+        tl.fromTo(card, { y: 60, scale: 0.95, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.5 }, start + 0.1);
+      }
     }
 
     const rule = scene.querySelector(".feat-rule");
@@ -121,15 +169,25 @@ window.__timelines["news-video"] = tl;
 
     const bullets = scene.querySelectorAll(".feat-bullet");
     bullets.forEach((b, i) => {
-      tl.fromTo(b, { x: -40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4 }, start + 0.6 + i * 0.15);
+      const bulletX = isBottomRight ? 40 : -40;
+      tl.fromTo(b, { x: bulletX, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4 }, start + 0.6 + i * 0.15);
     });
   }
 
   // ── CALLOUT ───────────────────────────────────────────────────────────
   function animateCallout(scene, tl, start) {
     const card = scene.querySelector(".callout-card");
+    const isBottomLeft = scene.classList.contains("align-bottom-left");
+    const isBottomRight = scene.classList.contains("align-bottom-right");
+
     if (card) {
-      tl.fromTo(card, { y: 50, scale: 0.92, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.55 }, start + 0.2);
+      if (isBottomLeft) {
+        tl.fromTo(card, { x: -80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6 }, start + 0.2);
+      } else if (isBottomRight) {
+        tl.fromTo(card, { x: 80, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6 }, start + 0.2);
+      } else {
+        tl.fromTo(card, { y: 50, scale: 0.92, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.55 }, start + 0.2);
+      }
     }
   }
 

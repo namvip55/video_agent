@@ -74,7 +74,12 @@ export function composeHtml(args: ComposeArgs): string {
   const animJs = readFileSync(join(TPL_DIR, "animations.js"), "utf8");
 
   const tpl = readFileSync(join(TPL_DIR, "base.html.tmpl"), "utf8");
+
+  // Set theme class on body (default classic if not provided)
+  const themeClass = script.metadata.theme ? `theme-${script.metadata.theme}` : "theme-classic";
+
   return tpl
+    .replace("<body>", `<body class="${themeClass}">`)
     .replace("{{TITLE}}", escapeHtml(script.metadata.title))
     .replace(/\{\{TOTAL_DURATION\}\}/g, totalDuration.toFixed(2))
     .replace("{{SHELL}}", shellHtml)
@@ -164,7 +169,12 @@ function renderScene(
   } else {
     bgHtml = `<div class="bg gradient-news-dark"></div>`;
   }
-  const overlayHtml = `<div class="overlay" style="opacity: 0.55"></div>
+  // Skip overlay/vignette for video scenes — chroma-key needs pure #FF00FF.
+  // Vignette effect for video scenes is applied in ffmpeg post-compositing instead.
+  const isVideoScene = !!videoRelPath;
+  const overlayHtml = isVideoScene
+    ? ''
+    : `<div class="overlay" style="opacity: 0.55"></div>
   <div class="vignette"></div>
   <div class="vignette-bottom"></div>
   <div class="vignette-top"></div>`;
@@ -192,6 +202,10 @@ function renderScene(
     case "callout":
       inner = renderCalloutInner(td);
       layoutName = "callout";
+      break;
+    case "kinetic-text":
+      inner = renderKineticTextInner(td);
+      layoutName = "kinetic-text";
       break;
     case "outro":
       inner = renderOutroInner(td, tiktok, tiktokAvatarRelPath);
@@ -252,6 +266,7 @@ function renderStatHeroInner(td: Extract<TemplateDataType, { template: "stat-her
 
 // ── FEATURE LIST SCENE ─────────────────────────────────────────────────────
 function renderFeatureListInner(td: Extract<TemplateDataType, { template: "feature-list" }>): string {
+  const alignClass = td.align ? `align-${td.align}` : "align-center";
   const bullets = td.bullets.map((b, i) =>
     `<div class="feat-bullet feat-bullet-${i}" data-idx="${i}">
       <div class="feat-dot"></div>
@@ -260,7 +275,7 @@ function renderFeatureListInner(td: Extract<TemplateDataType, { template: "featu
   ).join("\n    ");
 
   return `
-<div class="layout-feature-list">
+<div class="layout-feature-list ${alignClass}">
   <div class="feat-card">
     <div class="feat-title">${escapeHtml(td.title)}</div>
     <div class="feat-rule"></div>
@@ -273,12 +288,29 @@ function renderFeatureListInner(td: Extract<TemplateDataType, { template: "featu
 
 // ── CALLOUT SCENE ──────────────────────────────────────────────────────────
 function renderCalloutInner(td: Extract<TemplateDataType, { template: "callout" }>): string {
+  const alignClass = td.align ? `align-${td.align}` : "align-center";
   const tag = td.tag ? `<div class="callout-tag">${escapeHtml(td.tag)}</div>` : "";
   return `
-<div class="layout-callout">
+<div class="layout-callout ${alignClass}">
   <div class="callout-card">
     ${tag}
     <div class="callout-statement">${escapeHtml(td.statement)}</div>
+  </div>
+</div>`.trim();
+}
+
+// ── KINETIC TEXT SCENE ─────────────────────────────────────────────────────
+function renderKineticTextInner(td: Extract<TemplateDataType, { template: "kinetic-text" }>): string {
+  const chunks = td.chunks.map((chunk, i) =>
+    `<div class="kinetic-chunk kinetic-chunk-${i}">${escapeHtml(chunk)}</div>`
+  ).join("");
+
+  const colorClass = td.highlightColor === "secondary" ? "highlight-secondary" : "highlight-primary";
+
+  return `
+<div class="layout-kinetic-text ${colorClass}">
+  <div class="kinetic-container">
+    ${chunks}
   </div>
 </div>`.trim();
 }
@@ -332,10 +364,15 @@ function buildScene(
   layoutName: string,
   innerHtml: string,
 ): string {
+  // Extract align from templateData if it exists
+  const td = scene.templateData as any;
+  const alignClass = td.align ? `align-${td.align}` : "";
+  const cameraEffect = scene.camera || "none";
+
   return `
-<div class="scene clip" id="scene-${scene.id}"
+<div class="scene clip ${alignClass}" id="scene-${scene.id}"
      data-start="${start.toFixed(2)}" data-duration="${duration.toFixed(2)}" data-active="0"
-     data-layout="${layoutName}">
+     data-layout="${layoutName}" data-camera="${cameraEffect}">
   ${innerHtml}
 </div>`.trim();
 }

@@ -335,7 +335,9 @@ export async function runPipeline(scriptPath: string): Promise<void> {
         }
       });
     }
-    f.push("[footage][ui]overlay=format=auto[out]");
+    // Apply vignette darkening to footage layer (since HTML overlay is skipped for video scenes)
+    f.push("[footage]drawbox=x=0:y=0:w=iw:h=ih:color=black@0.35:t=fill[footage_dark]");
+    f.push("[footage_dark][ui]overlay=format=auto[out]");
     const filterGraph = f.join("; ");
     log.info(`  ffmpeg filter: ${filterGraph}`);
     await new Promise<void>((resolve, reject) => {

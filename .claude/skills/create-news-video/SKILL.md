@@ -6,6 +6,10 @@ trigger-phrases:
   - "tạo video so sánh GitHub và HuggingFace"
   - "làm video so sánh 2 nền tảng GitHub vs HuggingFace"
   - "so sánh Github và HuggingFace"
+  - "làm video tiểu sử"
+  - "giới thiệu nhân vật"
+  - "làm video chân dung"
+  - "tạo video profile"
 ---
 
 # Create News Video Skill
@@ -52,16 +56,23 @@ Create file: `data/firecrawl/github_vs_huggingface_<YYYYMMDD>.md` with structure
 ### Step 3: Auto-Generate Video from Markdown
 
 1. **Read the .md file** using `Read` tool
-2. **Create script.json** with structure:
+2. **Create slug + output directory**:
+   - slug = `github-vs-huggingface`
+   - timestamp = current local time as `YYYYMMDD-HHmm`
+   - outputDir = `output/<slug>-<timestamp>/`
+   - Use Bash: `mkdir -p <outputDir>`
+3. **Create script.json** in `outputDir` with structure:
    - Hook: "2 ông lớn thống trị mã nguồn mở: GitHub và HuggingFace"
    - Body scenes: alternating GitHub vs HuggingFace highlights
    - Comparison scene: side-by-side table
    - Outro: TikTok call to action
-3. **Execute pipeline:**
+4. **Execute pipeline:**
    ```bash
-   npm run pipeline -- output/<slug>/script.json
+   # Set extended protocol timeout for heavy GSAP/Chromium renderings
+   $env:PRODUCER_PUPPETEER_PROTOCOL_TIMEOUT_MS = "600000"
+   npm run pipeline -- output/github-vs-huggingface-<timestamp>/script.json
    ```
-4. **Report success** with output links.
+5. **Report success** with output links.
 
 ### Step 4: Fallback
 
@@ -70,7 +81,49 @@ Create file: `data/firecrawl/github_vs_huggingface_<YYYYMMDD>.md` with structure
 
 ---
 
-# Create News Video Skill (Standard Mode)
+## Special Mode: Character Profile (Tiểu sử nhân vật)
+
+When user triggers with character profile phrases, execute this specialized workflow:
+
+### Step 1: Research Character
+- Use `firecrawl_search` and `firecrawl_scrape` (or `WebFetch`) to find biography and key facts.
+- Focus on: Full name, current role, famous quotes, net worth/major stats, top 3-5 achievements.
+
+### Step 2: Specialized Script Structure
+Create `script.json` following this specific flow for maximum engagement:
+
+1. **Scene 0 (Hook)**:
+   - Template: `hook`
+   - Headline: Tên nhân vật (e.g., "Jensen Huang")
+   - Subhead: Danh xưng ấn tượng (e.g., "Cha đẻ đế chế NVIDIA")
+   - Visual: `bgSrc: "$source.image"` (Portrait photo)
+   - Note: Metadata should set `"theme": "gold"` for premium character profiles.
+
+2. **Scene 1 (The Quote/Legacy)**:
+   - Template: `callout`
+   - Statement: Câu nói nổi tiếng hoặc triết lý sống.
+   - Visual: `videoKeyword`: "luxury office, successful person, motivation"
+   - Options: `align: "bottom-left"` hoặc `"bottom-right"` để không che mặt nhân vật.
+
+3. **Scene 2 (Key Statistic)**:
+   - Template: `stat-hero`
+   - Value: (e.g., "$100 Billion")
+   - Label: (e.g., "Giá trị tài sản ròng")
+   - Visual: `videoKeyword`: "wealth, money, tech stocks"
+
+4. **Scene 3-5 (Achievements)**:
+   - Template: `feature-list`
+   - Title: "Cột mốc sự nghiệp"
+   - Bullets: Top 3 achievements.
+   - Visual: `videoKeyword`: "tech startup, global impact, futuristic"
+   - Options: `align: "bottom-left"` hoặc `"bottom-right"`.
+
+5. **Scene 6 (Call to action)**:
+   - Template: `outro`
+   - Standard outro format.
+
+---
+
 
 Generate a Vietnamese 9:16 motion-graphic news video from a URL or .txt file.
 
@@ -108,9 +161,10 @@ Before using this skill, ensure the following are set up:
 
 **B. If input is a URL (or obtained from search):**
 - Use `firecrawl_scrape` with `formats: ["markdown"]` to get clean, structured text.
+- For extremely long pages, strongly consider using `firecrawl_extract` with a simple schema (title, main_content_summary) to avoid context window overflow.
 - Extract: `title`, `content` (Markdown preferred), `ogImage` (from metadata), `domain`.
-- Optional: Use `firecrawl_extract` for strict structured field extraction.
-- If scraping fails → tell user to save content to .txt and retry. Stop.
+- If scraping fails → Try using standard `WebFetch` tool as a fallback. 
+- If `WebFetch` also fails → tell user to save content to .txt and retry. Stop.
 
 **File mode:**
 - Use `Read` to read the .txt file
@@ -149,11 +203,12 @@ Before using this skill, ensure the following are set up:
     "background": { "type": "gradient" }  // optional override
   },
   "templateData": {
-    "template": "hook",     // "hook" | "comparison" | "stat-hero" | "feature-list" | "callout" | "outro"
+    "template": "hook",     // "hook" | "comparison" | "stat-hero" | "feature-list" | "callout" | "kinetic-text" | "outro"
     "headline": "...",
     "subhead": "...",
     "kenBurns": "zoom-in"   // "zoom-in" | "zoom-out" | "pan-left" | "pan-right"
-  }
+  },
+  "camera": "none"          // "none" | "punch-in" | "punch-out" | "shake"
 }
 ```
 
@@ -178,16 +233,22 @@ Before using this skill, ensure the following are set up:
 { "template": "stat-hero", "value": "string (≤20)", "label": "string (≤40)", "context": "string (≤50, optional)" }
 
 // feature-list
-{ "template": "feature-list", "title": "string (≤40)", "bullets": ["string (≤50) × 1-4 items"], "icon": "string (optional)" }
+{ "template": "feature-list", "title": "string (≤40)", "bullets": ["string (≤50) × 1-4 items"], "icon": "string (optional)", "align": "center|bottom-left|bottom-right" }
 
 // callout
-{ "template": "callout", "statement": "string (≤80)", "tag": "string (≤20, optional)" }
+{ "template": "callout", "statement": "string (≤80)", "tag": "string (≤20, optional)", "align": "center|bottom-left|bottom-right" }
+
+// kinetic-text
+{ "template": "kinetic-text", "chunks": ["Phụ đề 1", "Phụ đề 2", "Phụ đề 3"], "highlightColor": "primary|secondary" }
 
 // outro
 { "template": "outro", "ctaTop": "string (≤30)", "channelName": "string (≤30)", "source": "string (≤40)" }
 ```
 
-**Line length:** Each text field in `templateData` (headline, subhead, value, label, title, bullets, statement, ctaTop, channelName) must be ≤ 25 characters (SKILL rule). The schema's max values (30–50) are upper bounds — keep visible text short enough for 9:16 portrait readability.
+**Theme selection:** Set `metadata.theme` in `script.json` to change the video's color palette.
+Options: `"classic"` (default, Cyan/Purple), `"gold"`, `"emerald"`, `"sunset"`, `"cyber"`.
+
+**Line length:** Each text field in `templateData` (headline, subhead, value, label, title, bullets, statement, ctaTop, channelName) is recommended to be ≤ 35 characters (SKILL rule). The schema allows up to 50 characters, but keep visible text as short as possible for 9:16 portrait readability.
 
 **Voice + speed:**
 ```json
@@ -195,7 +256,7 @@ Before using this skill, ensure the following are set up:
   "voice": {
     "provider": "lucylab",   // "lucylab" | "elevenlabs"
     "voiceId": "${VIETNAMESE_VOICEID}",  // placeholder — pipeline auto-substitutes from .env.local
-    "speed": 1.0            // 0.5 – 2.0
+    "speed": 1.2            // 0.5 – 2.0 (1.2 recommended for news)
   }
 }
 ```
@@ -236,7 +297,7 @@ The `voiceText` field is read aloud by LucyLab/ElevenLabs Vietnamese TTS. **Numb
 - `Apple`, `Google`, `OpenAI`, `Microsoft`, `TikTok`, `YouTube`, `GitHub`, `HuggingFace` ✅
 
 **Symbols to AVOID in voiceText:**
-- `→` `&` `%` `$` `#` `+` `=` (TTS says literal name or skips)
+- `→` `&` `%` `$` `#` `+` `=` `/` `-` `"` (TTS says literal name, ngắt quãng hoặc skips inconsistently)
 - `!` `?` at end of sentence: OK (natural intonation)
 - Emoji: NEVER (TTS pronounces or skips inconsistently)
 - URLs: NEVER (TTS reads dot/slash literally)
@@ -372,7 +433,7 @@ Before writing `script.json`, check all of the following:
 | Last scene | `scenes[last].type === "outro"` |
 | All template enum values | `hook`, `comparison`, `stat-hero`, `feature-list`, `callout`, `outro` |
 | All scene.type enum values | `hook`, `body`, `outro` |
-| templateData text fields | ≤ 25 characters (SKILL rule; schema allows more) |
+| templateData text fields | recommended ≤ 35 characters |
 | Total word count | ~150–200 Vietnamese words |
 | voiceText numbers | All spelled out phonetically in Vietnamese |
 | voiceText symbols | No `→ & % $ # + =`; no emoji; no URLs |
@@ -436,6 +497,13 @@ Tổng thời lượng: XX.Xs
 | Pexels API key missing | All `videoKeyword`/`imageKeyword` scenes fall back to gradient or article image |
 | Pipeline fails | Report error + output dir; user re-runs after fixing |
 
+## Performance & Rendering Notes
+
+- **Heavy CSS Filters:** Avoid excessive use of `backdrop-filter: blur()`, `mix-blend-mode`, or SVG fractal noise filters in templates. These significantly slow down headless Chrome frame capture and can cause timeouts.
+- **Protocol Timeout:** If the render fails with `Page.captureScreenshot timed out`, increase the protocol timeout via environment variable: `$env:PRODUCER_PUPPETEER_PROTOCOL_TIMEOUT_MS = "600000"`.
+- **Composition Size:** Keep HTML composition files under 500 lines. If a scene is too complex, split it into sub-compositions using the `data-composition-src` pattern (see Hyperframes docs).
+- **GPU Acceleration:** By default, PRODUCER uses software rendering. On machines without high-end GPUs, complex GSAP transforms (scale/rotate) on large images can be slow.
+
 ---
 
 ## Example Full script.json
@@ -455,7 +523,7 @@ Tổng thời lượng: XX.Xs
   "voice": {
     "provider": "lucylab",
     "voiceId": "${VIETNAMESE_VOICEID}",
-    "speed": 1.0
+    "speed": 1.2
   },
   "scenes": [
     {
@@ -480,7 +548,7 @@ Tổng thời lượng: XX.Xs
       "templateData": {
         "template": "feature-list",
         "title": "Camera đột phá",
-        "bullets": ["200MP main camera", "Chế độ AI Night Mode", " Quay video 8K"]
+        "bullets": ["200MP main camera", "Chế độ AI Night Mode", "Quay video 8K"]
       }
     },
     {
