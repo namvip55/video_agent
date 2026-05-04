@@ -58,14 +58,35 @@
 
 ## 🚀 Quick Start
 
-### 1. Installation
-```bash
-git clone https://github.com/hoquanghai/Auto-Create-Video.git
-cd Auto-Create-Video
-npm install
-```
+### 1. Prerequisites
+Ensure you have the following installed on your system:
+- **Node.js**: Version 22 or higher.
+- **FFmpeg**: Required for audio mixing and video encoding. 
+  - *Windows*: `winget install ffmpeg`
+  - *macOS*: `brew install ffmpeg`
+  - *Linux*: `sudo apt install ffmpeg`
+- **Claude Code**: (Optional) For automated orchestration using the `/create-news-video` command.
 
-### 2. Configuration
+### 2. Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/hoquanghai/Auto-Create-Video.git
+   cd Auto-Create-Video
+   ```
+
+2. **Install Node dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Download SFX Assets**:
+   The pipeline requires a default set of sound effects. Run this script to fetch them:
+   ```bash
+   npm run sfx:download
+   ```
+
+### 3. Configuration
 Copy `.env.example` to `.env.local` and fill in your API keys:
 - `TTS_PROVIDER`: `lucylab` or `elevenlabs`
 - `FILEGRAPH_API_KEY`: For Manga OCR.
