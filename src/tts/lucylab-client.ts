@@ -62,9 +62,9 @@ export class LucylabClient implements TtsClient {
   }
 
   private async submitWithRetry(text: string): Promise<string> {
-    const delays = [1000, 2000, 4000];
+    const delays = [2000, 4000, 8000, 16000]; // Tăng delay
     let lastErr: unknown;
-    for (let attempt = 0; attempt < 4; attempt++) {
+    for (let attempt = 0; attempt <= delays.length; attempt++) {
       try {
         const result = await this.rpc<TtsLongTextResult>(
           "ttsLongText",
@@ -75,7 +75,13 @@ export class LucylabClient implements TtsClient {
       } catch (e) {
         lastErr = e;
         const status = (e as AxiosError).response?.status;
-        const retryable = status === undefined || status >= 500;
+        const is502 = status === 502;
+        const retryable = status === undefined || status >= 500 || status === 429;
+
+        if (is502) {
+          console.warn(`LucyLab API returned 502 Bad Gateway. Attempt ${attempt + 1}/${delays.length + 1}...`);
+        }
+
         if (!retryable || attempt === delays.length) throw e;
         await sleep(delays[attempt]);
       }

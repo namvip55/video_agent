@@ -122,6 +122,35 @@ export async function concatWithSilence(
   }
 }
 
+/**
+ * Pad or trim an audio file to exactly `targetDuration` seconds.
+ */
+export async function padOrTrimAudio(
+  inputPath: string,
+  outputPath: string,
+  targetDuration: number,
+): Promise<void> {
+  const currentDuration = await getDurationSec(inputPath);
+
+  if (currentDuration > targetDuration) {
+    // Trim
+    await run("ffmpeg", [
+      "-y", "-i", inputPath,
+      "-t", String(targetDuration),
+      "-c:a", "libmp3lame", "-b:a", "192k",
+      outputPath,
+    ]);
+  } else {
+    // Pad with silence
+    await run("ffmpeg", [
+      "-y", "-i", inputPath,
+      "-filter_complex", `apad=pad_dur=${targetDuration - currentDuration}`,
+      "-c:a", "libmp3lame", "-b:a", "192k",
+      outputPath,
+    ]);
+  }
+}
+
 export interface SfxMixSpec {
   /** Absolute path to SFX mp3/wav file */
   path: string;

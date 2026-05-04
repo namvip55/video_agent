@@ -143,9 +143,21 @@ function renderScene(
   let bgHtml = "";
   const isHook = scene.type === "hook";
   const hasBgSrc = !!scene.visual?.bgSrc;
+  const isMangaPanel = scene.templateData.template === "manga-panel";
 
+  // MANGA PANEL: use pageSrc from templateData as background
+  if (isMangaPanel) {
+    const td = scene.templateData as Extract<TemplateDataType, { template: "manga-panel" }>;
+    const src = td.pageSrc ?? scene.visual?.bgSrc;
+    if (src) {
+      const kb = scene.kenBurns || td.kenBurns || "zoom-in";
+      bgHtml = `<div class="bg kb-${kb} manga-bg" style="background-image: url('${src}'); background-size: contain; background-repeat: no-repeat; background-position: center;"></div>`;
+    } else {
+      bgHtml = `<div class="bg gradient-news-dark"></div>`;
+    }
+  }
   // HOOK always prefers bgSrc (article hero image) — never video
-  if (isHook && bgImageRelPath && hasBgSrc) {
+  else if (isHook && bgImageRelPath && hasBgSrc) {
     const kb = scene.kenBurns || "zoom-in";
     bgHtml = `<div class="bg kb-${kb}" style="background-image: url('${bgImageRelPath}')"></div>`;
   }
@@ -172,7 +184,7 @@ function renderScene(
   // Skip overlay/vignette for video scenes — chroma-key needs pure #FF00FF.
   // Vignette effect for video scenes is applied in ffmpeg post-compositing instead.
   const isVideoScene = !!videoRelPath;
-  const overlayHtml = isVideoScene
+  const overlayHtml = (isVideoScene || isMangaPanel)
     ? ''
     : `<div class="overlay" style="opacity: 0.55"></div>
   <div class="vignette"></div>
@@ -206,6 +218,10 @@ function renderScene(
     case "kinetic-text":
       inner = renderKineticTextInner(td);
       layoutName = "kinetic-text";
+      break;
+    case "manga-panel":
+      inner = renderMangaPanelInner(td);
+      layoutName = "manga-panel";
       break;
     case "outro":
       inner = renderOutroInner(td, tiktok, tiktokAvatarRelPath);
@@ -311,6 +327,31 @@ function renderKineticTextInner(td: Extract<TemplateDataType, { template: "kinet
 <div class="layout-kinetic-text ${colorClass}">
   <div class="kinetic-container">
     ${chunks}
+  </div>
+</div>`.trim();
+}
+
+// ── MANGA PANEL SCENE ─────────────────────────────────────────────────────
+function renderMangaPanelInner(td: Extract<TemplateDataType, { template: "manga-panel" }>): string {
+  const pageNum = td.pageNumber;
+  const totalPages = td.totalPages;
+  const mangaTitle = escapeHtml(td.mangaTitle);
+  const chapterTitle = escapeHtml(td.chapterTitle);
+  const pageSrc = td.pageSrc ? escapeHtml(td.pageSrc) : "";
+
+  // The manga panel uses the page image as background (set via scene bg),
+  // and overlays page number + title info
+  return `
+<div class="layout-manga-panel">
+  ${pageSrc ? `<div class="manga-page-img" style="background-image: url('${pageSrc}')"></div>` : ""}
+  <div class="manga-info-top">
+    <div class="manga-title-bar">${mangaTitle}</div>
+    <div class="manga-chapter-bar">${chapterTitle}</div>
+  </div>
+  <div class="manga-page-counter">
+    <span class="manga-page-current">${pageNum}</span>
+    <span class="manga-page-sep">/</span>
+    <span class="manga-page-total">${totalPages}</span>
   </div>
 </div>`.trim();
 }

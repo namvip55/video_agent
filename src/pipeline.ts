@@ -9,16 +9,17 @@ import { fetchImage, fetchPexelsImage } from "./assets/image-fetcher.js";
 import { fetchStockVideo } from "./assets/video-fetcher.js";
 import { getDurationSec, concatWithSilence, mixSfxOntoVoice, type SfxMixSpec } from "./assets/audio-tools.js";
 import { indexSfxLibrary, pickSfxForScene, defaultPlayback } from "./assets/sfx-selector.js";
+import { mixBgmIntoVideo } from "./assets/bgm-mixer.js";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { composeHtml } from "./render/html-composer.js";
 import { renderWithHyperframes } from "./render/hyperframes-runner.js";
 import { log } from "./utils/logger.js";
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 8;
 const DURATION_MIN_SEC = 48;
 const DURATION_MAX_SEC = 72;
-const SCENE_GAP_SEC = 0.3;
+const SCENE_GAP_SEC = 0.5;
 const OUTRO_HOLD_SEC = 3;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -76,16 +77,44 @@ export async function runPipeline(scriptPath: string): Promise<void> {
     limit(async () => {
       const out = join(voiceDir, `scene-${scene.id}.mp3`);
       const srtOut = join(voiceDir, `scene-${scene.id}.srt`);
+      let dur: number;
+
       if (existsSync(out)) {
-        const dur = await getDurationSec(out);
-        doneTts++;
-        log.progress(doneTts, totalTts, "TTS");
+        dur = await getDurationSec(out);
         log.info(`  scene ${scene.id}: REUSE existing mp3 (${dur.toFixed(2)}s) — delete to force re-TTS`);
-        return { id: scene.id, path: out, durationSec: dur };
+      } else {
+        log.info(`  scene ${scene.id} (${scene.voiceText.length} chars)...`);
+
+        // Handle explicit silence request (Manga mode)
+        if (scene.voiceText.trim() === ".") {
+          log.info(`  scene ${scene.id}: generating empty silence for reading mode`);
+          const { spawn } = await import("node:child_process");
+          await new Promise<void>((resolve, reject) => {
+            const proc = spawn("ffmpeg", [
+              "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono",
+              "-t", "0.5", "-c:a", "libmp3lame", "-b:a", "192k", out
+            ]);
+            proc.on("close", (code) => code === 0 ? resolve() : reject(new Error("ffmpeg silence generation failed")));
+          });
+          await writeFile(srtOut, JSON.stringify([])); // Empty SRT
+          dur = 0.5;
+        } else {
+          await ttsClient.generate(scene.voiceText, out, srtOut);
+          dur = await getDurationSec(out);
+        }
       }
-      log.info(`  TTS scene ${scene.id} (${scene.voiceText.length} chars)...`);
-      await ttsClient.generate(scene.voiceText, out, srtOut);
-      const dur = await getDurationSec(out);
+
+      // If targetDuration is specified, pad/trim the audio
+      if (scene.targetDuration && Math.abs(dur - scene.targetDuration) > 0.1) {
+        log.info(`  scene ${scene.id}: Adjusting duration from ${dur.toFixed(2)}s to ${scene.targetDuration}s...`);
+        const { padOrTrimAudio } = await import("./assets/audio-tools.js");
+        const tmpOut = join(voiceDir, `scene-${scene.id}-padded.mp3`);
+        await padOrTrimAudio(out, tmpOut, scene.targetDuration);
+        const { rename } = await import("node:fs/promises");
+        await rename(tmpOut, out);
+        dur = scene.targetDuration;
+      }
+
       doneTts++;
       log.progress(doneTts, totalTts, "TTS");
       log.info(`  scene ${scene.id}: ${dur.toFixed(2)}s`);
@@ -371,8 +400,18 @@ export async function runPipeline(scriptPath: string): Promise<void> {
     log.ok(`Video composited with ${footageScenes.length} Pexels footage(s)`);
   }
 
-  // ── STEP 7: Done ────────────────────────────────────────────────────────
-  log.step(7, TOTAL_STEPS, "Done");
+  // ── STEP 7: Mix BGM (manga mode) ─────────────────────────────────────────
+  const isMangaMode = script.metadata.mode === "manga";
+  if (isMangaMode && script.bgm) {
+    log.step(7, TOTAL_STEPS, "Mix BGM into video");
+    await mixBgmIntoVideo(videoPath, script.bgm, totalAudioSec);
+  } else if (isMangaMode) {
+    log.step(7, TOTAL_STEPS, "Mix BGM (skipped — no BGM config)");
+    log.info("  No BGM config in script.json — skipping");
+  }
+
+  // ── STEP 8: Done ────────────────────────────────────────────────────────
+  log.step(TOTAL_STEPS, TOTAL_STEPS, "Done");
   log.done(`Video ready: ${script.metadata.title}`);
 
   const finalWordCount = script.scenes.reduce((n, s) => n + s.voiceText.split(/\s+/).filter(Boolean).length, 0);

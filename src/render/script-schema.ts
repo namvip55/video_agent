@@ -59,6 +59,22 @@ const OutroData = z.object({
   source: z.string().min(1).max(40),
 });
 
+const MangaPanelData = z.object({
+  template: z.literal("manga-panel"),
+  /** Current page number (1-based) */
+  pageNumber: z.number().int().min(1),
+  /** Total pages in this chapter */
+  totalPages: z.number().int().min(1),
+  /** Manga title displayed at top */
+  mangaTitle: z.string().min(1).max(60),
+  /** Chapter title displayed below manga title */
+  chapterTitle: z.string().min(1).max(80),
+  /** Ken Burns effect for this panel */
+  kenBurns: z.enum(["zoom-in", "zoom-out", "pan-left", "pan-right"]).default("zoom-in"),
+  /** Local path to the page image (set by pipeline) */
+  pageSrc: z.string().optional(),
+});
+
 export const TemplateData = z.discriminatedUnion("template", [
   HookData,
   ComparisonData,
@@ -67,6 +83,7 @@ export const TemplateData = z.discriminatedUnion("template", [
   CalloutData,
   KineticTextData,
   OutroData,
+  MangaPanelData,
 ]);
 
 export type TemplateDataType = z.infer<typeof TemplateData>;
@@ -113,6 +130,8 @@ const Scene = z.object({
   camera: z.enum(["none", "punch-in", "punch-out", "shake"]).default("none").optional(),
   /** Ken Burns effect for image backgrounds (defaults to "zoom-in") */
   kenBurns: z.enum(["zoom-in", "zoom-out", "pan-left", "pan-right"]).optional(),
+  /** Target duration for the scene in seconds. If set, audio will be padded/trimmed to this exact length. */
+  targetDuration: z.number().min(1).optional(),
 });
 
 // ── Root schema ────────────────────────────────────────────────────────────
@@ -124,21 +143,34 @@ export const ScriptSchema = z.object({
     source: z.object({
       url: z.string(),
       domain: z.string(),
-      image: z.string().url().nullable(),
+      image: z.string().nullable(),
     }),
     channel: z.string().min(1),
     /** Color theme for the entire video. Default is "classic" (cyan/purple). */
     theme: z.enum(["classic", "gold", "emerald", "sunset", "cyber"]).default("classic").optional(),
+    /** Mode: "news" (default) or "manga" (manga slideshow mode). */
+    mode: z.enum(["news", "manga"]).default("news").optional(),
   }),
   voice: z.object({
     provider: z.enum(["lucylab", "elevenlabs"]),
     voiceId: z.string().min(1),
     speed: z.number().min(0.5).max(2.0),
   }),
+  /** Optional BGM config for manga mode. */
+  bgm: z.object({
+    /** Path or keyword for background music file */
+    src: z.string().min(1),
+    /** Volume 0-1 (default 0.2) */
+    volume: z.number().min(0).max(1).default(0.2),
+    /** Fade in duration in seconds (default 2) */
+    fadeInSec: z.number().min(0).default(2),
+    /** Fade out duration in seconds (default 3) */
+    fadeOutSec: z.number().min(0).default(3),
+  }).optional(),
   scenes: z
     .array(Scene)
-    .min(5)
-    .max(8, "scenes must have at most 8 items")
+    .min(3)
+    .max(150, "scenes must have at most 150 items")
     .refine(
       (s) => s[0]?.type === "hook",
       { message: "scenes[0] must be type=hook" }

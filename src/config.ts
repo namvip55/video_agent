@@ -8,6 +8,10 @@ export interface TiktokConfig {
   followers: string;
   /** URL to download avatar JPG. If undefined, the bundled `assets/avatar.jpg` is used. */
   avatarUrl?: string;
+  // OAuth
+  clientId?: string;
+  clientSecret?: string;
+  redirectUri?: string;
 }
 
 export interface Config {
@@ -94,6 +98,9 @@ export function loadConfig(): Config {
       handle: process.env.TIKTOK_HANDLE ?? "@congnghe24h",
       followers: process.env.TIKTOK_FOLLOWERS ?? "1.2M followers",
       avatarUrl: process.env.TIKTOK_AVATAR_URL || undefined,
+      clientId: process.env.TIKTOK_CLIENT_ID,
+      clientSecret: process.env.TIKTOK_CLIENT_SECRET,
+      redirectUri: process.env.TIKTOK_REDIRECT_URI || "http://localhost:3000/callback",
     },
     pexelsApiKey: process.env.PEXELS_API_KEY,
     ttsConcurrency: intDefault("TTS_CONCURRENCY", 1),

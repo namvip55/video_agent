@@ -15,7 +15,31 @@
       "Bash(ffprobe -v quiet -print_format json -show_format -show_streams \"C:/Users/Admin/expand_auto_create_video/output/phim-hot-2026-20260502-1530/video.mp4\")",
       "Bash(ffprobe \"C:/Users/Admin/expand_auto_create_video/output/phim-hot-2026-20260502-1530/video.mp4\")",
       "Bash(git checkout *)",
-      "Bash(PRODUCER_PUPPETEER_PROTOCOL_TIMEOUT_MS=600000 npm run *)"
+      "Bash(PRODUCER_PUPPETEER_PROTOCOL_TIMEOUT_MS=600000 npm run *)",
+      "Bash(npm test *)",
+      "Bash(dir C:UsersAdminexpand_auto_create_videosrc *)",
+      "Bash(386 ls *)",
+      "PowerShell(mkdir C:\\\\Users\\\\Admin\\\\expand_auto_create_video\\\\src\\\\manga)",
+      "PowerShell(mkdir C:\\\\Users\\\\Admin\\\\expand_auto_create_video\\\\assets\\\\bgm -Force)",
+      "PowerShell(cd C:\\\\Users\\\\Admin\\\\expand_auto_create_video; if \\(Test-Path output\\) { \\(ls output -Directory\\).Name | Sort-Object -Descending | Select-Object -First 3 } else { \"no output dir\" })",
+      "PowerShell(npx tsx temp-download-manga.ts)",
+      "PowerShell($url = \"https://cdn.comico.la/manga_6213062b06fc8/93729dddc0aa0f7580e1a87afac7ea7a/cropped_895023.jpg\"; try { $response = Invoke-WebRequest -Uri $url -Headers @{ \"Referer\" = \"https://comi.mobi/\"; \"User-Agent\" = \"Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" } -Method GET -OutFile \"output/002_cong-dan-nguoi-thu-chap-1-20260503-1621/pages/test.jpg\" -ErrorAction Stop; $fi = Get-Item \"output/002_cong-dan-nguoi-thu-chap-1-20260503-1621/pages/test.jpg\"; Write-Output \"Success! Size: $\\($fi.Length\\) bytes\" } catch { Write-Output \"Error: $\\($_.Exception.Message\\)\" })",
+      "Bash(npx tsx *)",
+      "Bash(grep -E \"part-[1-4].*video.mp4$\")",
+      "Bash(npm install *)",
+      "Bash(curl -s \"https://api.github.com/repos/google/generative-ai-js\")",
+      "Bash(npm i *)",
+      "mcp__storm-mcp---claude__filegraph_image_processing_docs",
+      "Bash(npm uninstall *)",
+      "mcp__storm-mcp---claude__filegraph_api_overview",
+      "Bash(claude mcp *)",
+      "Bash(curl *)",
+      "mcp__storm-mcp---claude__filegraph_text_extraction_docs",
+      "mcp__filegraph__filegraph_image_processing_docs",
+      "Bash(node *)",
+      "mcp__filegraph__filegraph_api_overview",
+      "Bash(Get-ChildItem C:\\\\Users\\\\Admin\\\\expand_auto_create_video\\\\output\\\\004_co-be-ban-diem-chap-1-202605040228\\\\pages *)",
+      "mcp__storm-mcp---claude__firecrawl_extract"
     ]
   }
 }

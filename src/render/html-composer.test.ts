@@ -28,7 +28,7 @@ describe("composeHtml", () => {
     expect(html).toContain('data-height="1920"');
     expect(html).toContain('data-start="0"');           // root composition timing
     expect(html).toContain('id="voice"');               // audio element discoverable by hyperframes
-    expect(html).toContain('class="scene clip"');       // clip class required for hyperframes visibility
+    expect(html).toContain('class="scene clip');       // clip class required for hyperframes visibility
     expect(html).toContain('window.__timelines');       // timeline registry (inlined JS)
 
     // ── Persistent brand shell ────────────────────────────────

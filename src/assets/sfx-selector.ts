@@ -55,7 +55,7 @@ export const TEMPLATE_TO_CATEGORY: Record<string, string[]> = {
   comparison:     ["transition", "emphasis"],           // side-by-side reveal
   "stat-hero":    ["emphasis", "success"],              // number reveal — bell/chime
   "feature-list": ["transition", "emphasis"],           // bullets pop in
-  callout:        ["alert", "drumroll"],                // important — warning
+  callout:        ["emphasis", "drumroll"],              // important — emphasis
   outro:          ["outro", "success"],                 // ending signature
 };
 
@@ -64,11 +64,11 @@ export const TEMPLATE_TO_CATEGORY: Record<string, string[]> = {
  * Order matters — first match wins. Test against `voiceText` (case-insensitive).
  */
 export const KEYWORD_RULES: { pattern: RegExp; category: string; label: string }[] = [
-  // Warning / risk / danger
+  // Alert / Warning (Semantic only - category will be skipped in Tier 2)
   {
-    pattern: /(cảnh báo|rủi ro|nguy hiểm|đáng lo|đe dọa|cảnh giác|tiêu cực|lo ngại|warning|danger|alert|risk|threat)/i,
+    pattern: /(cảnh báo|nguy hiểm|rủi ro|alert|warning|danger|risk)/i,
     category: "alert",
-    label: "warning",
+    label: "alert",
   },
   // Failure / mistake / error
   {
@@ -84,7 +84,7 @@ export const KEYWORD_RULES: { pattern: RegExp; category: string; label: string }
   },
   // Reveal / launch / first / discover
   {
-    pattern: /(tiết lộ|khám phá|lần đầu|công bố|ra mắt|trình làng|hé lộ|phát hành|reveal|launch|unveil|debut|announce|introduce)/i,
+    pattern: /(tiết lộ|khám phá|lần đầu|công bố|ra mắt|trình làng|hé lộ|phát hành|bắt đầu|mở đầu|reveal|launch|unveil|debut|announce|introduce|start)/i,
     category: "reveal",
     label: "reveal",
   },
@@ -96,7 +96,7 @@ export const KEYWORD_RULES: { pattern: RegExp; category: string; label: string }
   },
   // Cinematic / massive / epic
   {
-    pattern: /(hùng vĩ|hoành tráng|vĩ đại|chấn động|khổng lồ|cinematic|epic|massive|huge|colossal)/i,
+    pattern: /(hùng vĩ|hoành tráng|vĩ đại|chấn động|khổng lồ|nguy nga|lộng lẫy|cinematic|epic|massive|huge|colossal|grand)/i,
     category: "cinematic",
     label: "cinematic",
   },
@@ -105,6 +105,12 @@ export const KEYWORD_RULES: { pattern: RegExp; category: string; label: string }
     pattern: /(hồi hộp|chờ đợi|sắp tới|và đây|và bây giờ|drumroll|suspense|anticipation)/i,
     category: "drumroll",
     label: "drumroll",
+  },
+  // Transition - movement / travel / go
+  {
+    pattern: /(đi mãi|cuối cùng|đến nơi|về nhà|lên đường|chạy ra|xông ra|travel|journey|arrival|transition|move|go)/i,
+    category: "transition",
+    label: "transition",
   },
 ];
 
@@ -150,6 +156,8 @@ export function pickSfxForScene(args: {
   for (const rule of KEYWORD_RULES) {
     const m = voiceText.match(rule.pattern);
     if (!m) continue;
+    // Special case: "alert" category is disallowed by user request
+    if (rule.category === "alert") continue;
     const file = pickFromCategory(rule.category, sceneId, index);
     if (file) {
       return {
@@ -173,7 +181,7 @@ export function pickSfxForScene(args: {
   }
 
   // Tier 4: last-resort fallback — any non-empty category
-  const allCats = Object.keys(index);
+  const allCats = Object.keys(index).filter(cat => cat !== "alert");
   for (const cat of allCats) {
     const file = pickFromCategory(cat, sceneId, index);
     if (file) {

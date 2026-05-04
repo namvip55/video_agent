@@ -25,7 +25,7 @@ describe("pickSfxForScene", () => {
     expect(r!.source).toBe("template");
   });
 
-  it("uses semantic match for warning content (override of template default)", () => {
+  it("skips alert category for warning content (user requested removal)", () => {
     const r = pickSfxForScene({
       voiceText: "Cảnh báo: AI tự chủ có thể đặt ra rủi ro về an ninh mạng.",
       templateName: "stat-hero",   // would normally be emphasis
@@ -33,9 +33,8 @@ describe("pickSfxForScene", () => {
       index: FAKE_INDEX,
     });
     expect(r).not.toBeNull();
-    expect(r!.relPath.startsWith("alert/")).toBe(true);
-    expect(r!.source).toBe("semantic");
-    expect(r!.matchedKeyword).toMatch(/cảnh báo/i);
+    expect(r!.relPath.startsWith("alert/")).toBe(false);
+    expect(r!.source).not.toBe("semantic"); // should fall back to template
   });
 
   it("uses success category for record/breakthrough content", () => {
